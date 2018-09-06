@@ -1,0 +1,2039 @@
+574
+
+IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 20, NO. 2, MARCH 2016
+
+Optic Disc Localization in Retinal Images Based
+on Cumulative Sum Fields
+Ivo Soares, Miguel Castelo-Branco, and António M. G. Pinheiro, Member, IEEE
+
+Abstract—This paper describes an automatic method for the
+optic disc localization in retinal images, which is effective and reliable with multiple datasets. Particularly, the described method
+reveals very effective dealing with retinal images with large pathological signs. The algorithm begins with a new vessel enhancement method based on a modified corner detector. Subsequently, a
+weighted version of the vessel enhancement is combined with morphological operators, to detect the four main vessels orientations
+{0◦ , 45◦ , 90◦ , 135◦ }. These four image functions have all the necessary information to determine an initial optic disc localization,
+resulting in two images that are respectively divided along the vertical or horizontal orientations with different division sizes. Each
+division is averaged creating a 2-D step function, and a cumulative
+sum of the different sizes step functions is calculated in the vertical and horizontal orientations, resulting in an initial optic disc
+position. The final optic disc localization is determined by a vessel
+convergence algorithm using its two most relevant features; high
+vasculature convergence and high intensity values. The proposed
+method was evaluated in eight publicly available datasets, including the STARE and DRIVE datasets. The optic disc was localized
+correctly in 1752 out of the 1767 retinal images (99.15%) with
+an average computation time of 18.34 s.
+Index Terms—Optic disc (OD) localization, retinal image analysis, retinal vessels enhancement.
+
+I. INTRODUCTION
+HE optic disc (OD) is one of the most important retinal
+landmarks to be detected. In normal conditions, it appears
+as a relatively circular yellowish disk, brighter than its surroundings. It is also the region where the retinal veins and arteries
+emerge and spread, covering the retina [1]. Significative changes
+in the shape, color, and depth provide quantitative metrics information for the detection of pathologies associated with the OD,
+e.g., glaucoma, neovascularization on the disk, and papilledema
+[2], [3]. Moreover, the automatic localization of the OD provides an invaluable help in the screening of diabetic retinopathy
+and macular degeneration, by discarding the OD as a potential
+confounder, relative to retinal exudates and other bright lesions
+(see Fig. 1). In addition, the OD provides a reference point to
+the detection of other important retinal landmarks like the fovea
+and retinal vasculature [1], [4]. Although the OD main features
+
+T
+
+Manuscript received June 4, 2014; revised September 6, 2014 and November
+17, 2014; accepted January 6, 2015. Date of current version March 3, 2016.
+This work was supported by the FCT project PEst-OE-FIS/UI0524/2014.
+I. Soares and M. Castelo-Branco are with the Health Sciences Research Centre, Faculty of Health Sciences, University of Beira Interior, 6201-001 Covilhã,
+Portugal (e-mail: isoares@ubi.pt; mcbranco@fcsaude.ubi.pt).
+A. M. G. Pinheiro is with the Department of Physics, University of Beira
+Interior, 6201-001 Covilhã, Portugal (e-mail: pinheiro@ubi.pt).
+Color versions of one or more of the figures in this paper are available online
+at http://ieeexplore.ieee.org.
+Digital Object Identifier 10.1109/JBHI.2015.2392712
+
+Fig. 1. Retinal images examples. Black arrows denote the optic disc. White
+arrows denote exudative lesions.
+
+and characteristics are relatively easy to describe, its automatic
+localization can be a difficult task. Furthermore, this localization is particularly difficult in pathological retinas or in cases
+where the OD exhibits an altered appearance. Many methods
+have been proposed to detect the OD. They can be divided in
+two main approaches: Appearance-based methods and modelbased methods [5]. Appearance-based methods, rely on shape
+characteristics and on the fact that the OD is usually the brightest region in normal retinal images. Examples of this approach
+are described in [6]–[9]. Although these methods exhibit a good
+performance in normal retinal images, they often fail when in
+the presence of pathological signs, the existence of confusing
+elements and poor quality images.
+Model-based methods make use of the vasculature information and of the fact that the vessels emerge from the OD. This
+approach tends to be the most effective and reliable, even in the
+presence of retinal diseases. Most relevant examples of this approach are the geometrical model proposed by Foracchia et al.
+[1], where the retinal vessels are modeled as two parabolas, with
+the vertex located in the OD position. Fuzzy convergence is a
+voting-type algorithm developed by Hoover et al. [10], where
+the originating vessel map convergence point near the OD center is determined. Kande et al. [11] proposed to identify the region with most vessels branches and, thus, the OD localization.
+Youssif et al. [4] and Frank ter Haar [12] proposed to fit the
+vasculature orientations on a directional model, being the OD
+located in the point where the maximum matching is achieved.
+Tobin et al. [13] segmented the retinal vasculature and considered several OD and vessel properties. Subsequently, a two-class
+Bayesian classifier and some prior knowledge is used to predict
+the OD localization. Although most of these methods result
+in effective OD localization, they tend to require large computation time, becoming impractical for clinical use. Hence, a
+recent effort has been made for the development of simultaneously fast and reliable methods. Mahfouz et al. [5] developed
+a technique where two projections of certain image features
+
+2168-2194 © 2015 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+See http://www.ieee.org/publications standards/publications/rights/index.html for more information.
+
+SOARES et al.: OPTIC DISC LOCALIZATION IN RETINAL IMAGES BASED ON CUMULATIVE SUM FIELDS
+
+575
+
+Fig. 2. Vessel enhancement. (a) Detail of a retinal image. (b) The corner detector K . (c) The vessel detector K̃ . (d) The second term in (4). (e) The vessel
+enhancement V .
+
+that encode the x and y coordinates of the OD are obtained.
+The resulting 1-D projections are then searched to determine
+the localization of the OD. Yu et al. [2] initially determines the
+OD localization candidates using template matching at different
+resolutions. Subsequently, the vessel characteristics of the OD
+are used to determine the final localization. More recently, Lu
+proposed a circular transformation designed to capture both the
+circular shape of the OD and the image variations across the OD
+boundary [14]. Moreover, Lu et al. also proposed a line operator
+designed to capture circular brightness structures [15]. Welfer
+et al. [16] proposed an image adaptive method based on a vascular structure model using morphological operators to detect the
+OD region. Abràmoff et al. [17] used kNN regression to build a
+regression model of the OD position. Using a prior vessel segmentation, the pixels inside the OD were searched, according to
+the regression model. More recently, Ramakanth et al. [18] proposed a method that uses FeatureMatch, an approximate nearest
+neighbor field algorithm, to find the correspondence between
+a chosen optic disc reference image and any given query image. This correspondence provides a distribution of patches in
+the query image that are closer to the patches in the reference
+image. The likelihood map obtained from the distribution of
+patches in the query image is used for optic disc localization
+[18], [19].
+In this paper, we propose an efficient and reliable method for
+OD localization in retinal images. Several important contributions are made. First, a new vessel enhancement is proposed.
+Second, a new technique designated by cumulative sum fields
+is introduced. Third, the proposed method was tested in a large
+number of publicly available datasets achieving an improved
+performance to other state-of-the-art methods. Fourth, a detailed
+performance comparison is made with a large number of several
+methods. The developed method was tested with eight different
+datasets, while other state-of-the-art methods were tested with
+a smaller number of datasets. To the best of our knowledge, the
+works in [5], [15], and[18] used the larger number of datasets
+(4 or 5) for testing, and always revealed a lower global performance. No illumination equalization was performed as in other
+methods like the described in [4] and [12]. The rest of this paper
+is organized as follows. The proposed OD localization technique
+is presented in Section II. Experimental results are described and
+discussed in Section III. Finally, some concluding remarks are
+drawn in Section IV.
+
+since it offers the best contrast and provides the most relevant
+clinical visual information [20]. If necessary, a resize of IG is
+performed, since the method is tested in different images from
+several datasets, and there is a need to maintain the coherence
+of the parameters that govern the algorithm. If IG has either a
+width or length larger than 900 pixels, it is proportionally scaled
+using a bicubic interpolation in such a manner that the larger
+dimension is 900 pixels. Next, a binary mask BW is created
+based on the method proposed by Haar [12]. An empirically
+threshold t = 28 is applied to the red channel component IR ,
+followed by the morphological operations closing and erosion
+using a “disk” structuring element of size 5 pixels. Only the BW
+white pixels are considered in further calculations. Ensuing, a
+new vessel enhancement is described.
+
+II. PROPOSED METHOD
+
+where ∂∂ xL2 , ∂∂ yL2 and ∂∂x∂Ly are the second-order partial derivatives of the image evaluated at (x, y) using the [−1 0 1] filter and the corresponding transpose. Solving the characteristic
+
+The proposed method comprises several steps. First, the green
+channel component IG of each RGB retinal image is selected,
+
+A. Vessel Enhancement
+Ideally, a good vessel enhancement method must be fast and
+minimize the detection of nonvessel structures or pathological
+signs [21], [22]. The influence of noise and the presence of
+bright central reflections in arteries must also be considered [23].
+The proposed vessel enhancement is specifically constructed to
+deal with all the previous mentioned aspects, being a modified
+version of the corner detector developed by Wang and Brady
+[24]. First, we create a filtered image L by blurring IG with a
+normalized Gaussian filter with a σ = 4 and a kernel size of
+[13 × 13], reducing noise and eliminating the arterial central
+bright regions. The initial corner detector K proposed in [24] is
+given by
+K = (∇2 L)2 − c|∇L|2
+
+(1)
+
+where ∇2 L is the Laplacian and |∇L| is the absolute value of
+the gradient of the image L, considered as an intensity surface.
+K enhances regions where a rapid change in the edge direction
+occurs. The parameter c defines how edge-phobic is K, being
+set to c = 1 in our implementation. The local shape curvature
+of the surface at a particular point (x, y) can be described by the
+Hessian matrix
+⎤
+⎡ 2
+∂2 L
+∂ L
+⎢ ∂x2
+∂x∂y ⎥
+⎥
+⎢
+(2)
+H=⎢
+⎥
+⎣ ∂2 L
+∂2 L ⎦
+∂x∂y
+2
+
+2
+
+2
+
+∂y 2
+
+576
+
+IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 20, NO. 2, MARCH 2016
+
+gions, e.g., exudates. Since blood blobs and microaneurysms
+are transformed in their most responsive point, their influence
+can be reduced as explained in the next section. The second
+disadvantage can be overcome with the inclusion of a proper
+weight parameter. Since λ2 offers a stronger response in more
+thick vessels, favoring the ones belonging to the main arcades,
+and the ones crossing the OD, a weighted version of V , using
+λ2 as a weight parameter can be defined. Hence, for any point
+(x, y) the following equation was defined:
+
+λ2 V, if λ2 > 0
+(5)
+Γ=
+0,
+otherwise.
+The weighted vessel enhancement Γ minimizes the impact of
+false vessels, and will play a fundamental role in the OD localization (see Fig. 3).
+B. Four Main Vessels Orientations Detection
+
+Fig. 3. Vessel enhancement examples. (a) Retinal image. (b) Result of the
+proposed vessel enhancement V . (c) Result of the proposed weighted vessel
+enhancement Γ. (d) Result of the vessel enhancement proposed by Frangi et al.
+[22]. All images are normalized.
+
+equation of the Hessian, the correspondent eigenvalues, can be
+computed. These values are called, respectively, the minimum
+and maximum principal curvatures, λ1 and λ2 . To enable a
+stronger response of the vessel structures, the square of the first
+term in (1) is removed, resulting in
+K̃ = ∇2 L − c|∇L|2 .
+
+(3)
+
+The retinal vessels emerge from the OD vertically and branch
+out horizontally [5]. Although other regions in retina may have
+vertical vessels (e.g., around macula), these are thinner than the
+ones around the OD. Between the vertical and horizontal orientations, the vessels assume mainly oblique (approximately 45◦
+and 135◦ ) orientations [4]. Morphological operators provide an
+efficient extraction methodology of the four main vessels orientations α = {0◦ , 45◦ , 90◦ , 135◦ } [25]. Since we intend to enhance linear structures, a logical choice for a structuring element
+is a “line” with a variable length and a variable angle covering
+both the short and long vessels. The morphological opening of
+Γ by a “line” structuring element S with an angle θ and a length
+l, can be defined as
+γ = Γ ◦ Slθ .
+
+The vessel enhancement equation is then given by
+V = K̃ −
+
+min
+
+∀(x,y ) ∈ BW
+
+(λ1 , K̃).
+
+(4)
+
+The λ1 is the minimum principal curvature and enhances dark
+blood blobs. Hence, for the vessels localizations, λ1 becomes
+smaller than K̃, and a large value of V is observed. Moreover,
+regions like blood blobs or microaneurysms close to the vessels result in the most responsive locations, the minimum of
+the blob or microaneurysm becoming less relevant in the final
+vessel detection. The process can be visualized in Fig. 2. The
+vessel enhancement described in (4) allows the preservation of
+elongated structures and a good discrimination between vessel and nonvessel structures. The proposed vessel enhancement
+V , and the Frangi vessel enhancement [22] also based in the
+Hessian matrix eigenvalues, are shown in Fig. 3. Both V and
+Frangi vessel enhancement were calculated at the same scale.
+From the comparison of Fig. 3(b) and (d), it can be observed that
+the vessel enhancement method given by V provides a better
+discrimination between vessels and nonvessels structures, particularly when bright lesions are present. Nevertheless, in pathological images V can have two disadvantages. First, although
+blood blobs and microaneurysms become less relevant, they can
+still be very intense. Second, V may enhance regions that appear
+similar to vessels, created by the depressions between bright re-
+
+(6)
+
+The opening operation is performed in a set of θ values, and
+the maxima are detected for each l value. This is done defining
+the set values θi = {θ1 , . . . , θn }, i = 1 . . . n, and a fixed set l =
+{5, 10, 15, 20, 25} pixels. The orientation vessel enhancement
+in the α orientation is defined as the summation of the maxima
+obtained for each l value, with
+γα =
+
+5
+	
+k =1
+
+θi
+max(Γ ◦ S5k
+).
+∀θ i
+
+(7)
+
+For each α = {0◦ , 45◦ , 90◦ , 135◦ }, the following θ values are
+used specifically:
+◦
+
+γ 0 , θ = {0◦ , 15◦ , 30◦ , 45◦ , 135◦ , 150◦ , 165◦ }
+◦
+
+γ 45 , θ = {30◦ , 40◦ , 50◦ , 60◦ }
+◦
+
+γ 90 , θ = {45◦ , 60◦ , 75◦ , 90◦ , 105◦ , 120◦ , 135◦ }
+◦
+
+γ 135 , θ = {120◦ , 130◦ , 140◦ , 150◦ }.
+
+(8)
+
+Note that by defining a minimum length value of five pixels,
+we avoid lesions like the microaneurysms and blood spots mentioned in the previous section. Furthermore, to assimilate the
+vessels tortuosity that can exist in some retinal images, a smaller
+angle increment in the oblique orientations is used. These values
+
+SOARES et al.: OPTIC DISC LOCALIZATION IN RETINAL IMAGES BASED ON CUMULATIVE SUM FIELDS
+
+Fig. 4. Four main vessels orientations for the single retinal image in Fig. 3.
+◦
+◦
+◦
+◦
+(a) γ 0 , (b) γ 4 5 , (c) γ 9 0 , and (d) γ 1 3 5 . The images were dilated with a small
+structuring element to allow a better visualization.
+
+of θ and l revealed to be the best tradeoff between accurate detection and computation time after extensive testing. The results
+of (7) and (8) are shown in Fig. 4.
+C. Initial OD Detection
+The orientation vessel enhancement functions γ α provide all
+the necessary information for the determination of an initial OD
+position, designated by (px , py ). To calculate (px , py ), the horizontal px and vertical py coordinates are determined separately.
+Two specific functions, one for each coordinate respectively are
+created according to the following equations:
+◦
+
+◦
+
+90 ◦
+
+45 ◦
+
+f1 = γ 0 − γ 90
+f2 = γ
+
++γ
+
+(9)
++γ
+
+135 ◦
+
+.
+
+(10)
+
+Although the vessels that emerge from the OD have a dominant
+vertical orientation, in some cases they can exhibit some variation. The same situation can be found when the vessels branch
+horizontally, where they also exhibit some variation. Hence, to
+improve the method reliability, both vertical and horizontal orientations also consider oblique orientations as can be seen in
+(8). Furthermore, the vertical vessels have a larger width in the
+OD region than in other regions of the retina, resulting in higher
+Γ values. The difference in (9) ensures a larger difference between the horizontal and vertical vessels values, allowing the
+determination of the OD horizontal coordinate px . In the OD
+horizontal coordinate px , the difference of (9) is higher because
+vessels have dominant vertical directions. In order to determine
+the OD vertical coordinate py , both vertical and oblique orientations must be considered, leading to the summation in (10).
+The vertical coordinate uses the fact that in the proximity of the
+OD there is a high confluence of oblique and vertical vessels,
+
+577
+
+Fig. 5. Computation of the vertical field Φ v (f1 ). The first row shows the
+result of (9). The middle row represents 2-D step functions of the successive
+subdivisions given by (11). The bottom row represents the filtered result of (14).
+
+creating the superior and inferior vessels arcades. These two
+vessels arcades create two maxima in f2 . Furthermore, between
+the two vessels arcades the vertical and oblique vessels almost
+disappear, creating a minimum in f2 close to the OD location.
+Since these coordinates are determined separately, the description of our method is continued using f1 and the coordinate px as an example. This is easily extended to f2 and the
+coordinate py .
+The function f1 (x, y) with domain [1, N ] × [1, M ], where
+N and M are respectively, the number of rows and columns
+(first row in Fig. 5), is d-times subdivided along the vertical
+direction, creating ri (i = 1, .., d + 1), equally vertical disjoint
+regions. The following 2-D step function φdv (f1 ) is defined as
+φdv (f1 ) =
+
+d+1
+
+
+
+ΣΣ
+
+∀(x,y )∈(r i ∧BW )
+
+i=1
+
+ΣΣ
+
+∀(x,y )∈r i
+
+f1 (x, y)
+
+BW
+
+(11)
+
+where BW is the binary mask previously defined, d is the number
+of divisions, and v stands for vertical, indicating the orientation
+of the divisions (middle row in Fig. 5). φdv (f1 ) performs an
+average of f1 (x, y) at each vertical region ri . Next, f1 (x, y)
+is successively subdivided in smaller intervals, and the cumulative sum of the corresponding 2-D step functions φdv (f1 ) is
+performed accordingly with the following equation:
+Φv (f1 ) =
+
+ξ
+	
+
+φdv (f1 ).
+
+(12)
+
+d=	
+
+The values ξ and 	 are respectively the maximum and minimum
+number of divisions. To suppress the abrupt changes resulting from the cumulative sums, several Gaussian filterings were
+
+578
+
+IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 20, NO. 2, MARCH 2016
+
+tested. The Gaussian filter with a σ = 15 and a kernel size of
+[51 × 51] proved to be the most effective (see example in the
+last row of Fig. 5). Φv (f1 ) represents an averaged version of
+f1 (x, y) along the vertical direction. Theoretically, the minimum and maximum values that d can assume are 0 and M − 1,
+respectively. However, in a small retinal image (700 × 600), the
+OD typically has a diameter of 80 pixels. Considering that the
+OD diameter can be up to double of this value (∼ 15 of 700), it
+is logical to assume a minimum value 	 = 4, creating five initial
+disjoint regions. The maximum value ξ is defined according to
+the image dimensions as ξ = round((max(N, M ))/μ), where
+round(.) represents the rounding function and μ is set according
+to the orientation of the divisions.
+Analogously, we define the average of f2 (x, y) along the
+horizontal direction as
+Φh (f2 ) =
+
+ξ
+	
+
+φdh (f2 ).
+
+(13)
+
+d=	
+
+The construction of (12) and (13) with the corresponding upper
+and lower limits are subsequently,
+Φv (f1 ) =
+
+ξ
+	
+
+φdv (f1 ), μ = 70
+
+(14)
+
+φdh (f2 ), μ = 45.
+
+(15)
+
+Fig. 6. Determination of the initial OD localization (p x , p y ). The horizontal
+blue lines in the IG image limits the area where the OD can be found. The
+vertical and horizontal red lines in the IG image represents minima from each
+profile. The perpendicular red lines in each horizontal and vertical fields select
+the points where the gv and gh profiles are determined. The red square define
+the point calculated as (p x , p y ).
+
+d=4
+
+Φh (f2 ) =
+
+ξ
+	
+d=4
+
+Equations (14) and (15) can be interpreted as cumulative sum
+fields, indicating the presence or absence of specific vessels
+orientations on f1 and f2 (defined by the (9) and (10)). The
+values of μ are defined empirically after extensive testing.
+The use of several division values d intend to provide extra
+adaptability to different image resolutions and OD sizes, compensating the d values where the response on f1 and f2 fails.
+Hence, the cumulative sums combine the information that results from each d value division leading to a larger value on the
+OD region, reinforcing its position both in the horizontal and
+vertical orientations. Moreover, if the OD region is unfocus, a
+single value of d might lead to a larger response of f1 and f2
+in other regions that has thinner vessels but are focused. This
+situation is also alleviated with the cumulative sums. By using
+the cumulative sums, the vertical and horizontal positions of
+the optic disc become reinforced. A simplified analysis of the
+cumulative sums fields is achieved by tracing the respective profile gv using the middle row of Φv (f1 ), and the profile gh using
+the middle column of Φh (f2 ). The minima of each profile are
+identified by the downward red arrows and the maxima by the
+upward blue arrows (see Fig. 6). These profiles are very similar
+for all the retinal images (see Fig. 7, where profiles obtained
+from different retinal images are represented), being possible
+to derive several important properties. From Fig. 7, it is possible to observe that both the horizontal px and the vertical py
+coordinates must be defined by a minimum in each profile. In
+particular, Fig. 7 (a) suggests that the horizontal coordinate px
+is defined by the absolute minimum of gv . This is explained by
+f1 definition in (9) that results in a larger difference between
+
+Fig. 7. Superposition of 30 random gv and gh profiles. The profiles were
+shifted localizing the OD in the origin (indicated by the dotted red line). (a) gv
+profiles, (b) gh profiles.
+
+the vertical and horizontal vessels orientations, leading to the
+lower region in (14) and the absolute minimum of gv . Thus,
+px is set on the absolute minimum of gv . For the vertical coordinate, we can observe in Fig. 7(b) that py is defined by the
+minimum between the two major maxima of the profile gh . This
+is explained by f2 definition in (10) that uses the confluence of
+the vertical and oblique vessels to the OD region, and the fact
+that the OD is localized between the vessels arcades. However,
+in some retinal images, there can be a vein occlusion, defocus,
+or an untypical vessels disposition that diminishes the presence
+of one of the vessels arcades. These situations can create other
+minima and maxima in gh . Hence, despite py is defined by a
+minimum of gh , it might happen that it is not the absolute minimum. To determine py , the two most displaced maxima of gh
+are initially considered (represented by the horizontal blue lines
+in IG image in Fig. 6). If none of the problems described above
+affect the image, these blue lines corresponds to the two major
+maxima of gh . py is defined as the minimum that exhibits the
+larger variation of gh among its neighboring maxima. In other
+
+SOARES et al.: OPTIC DISC LOCALIZATION IN RETINAL IMAGES BASED ON CUMULATIVE SUM FIELDS
+
+579
+
+words, if a given minimum limited by the two most displaced
+maxima of gh is defined as pm in , and its neighboring maxima
+are defined as pm ax 1 and pm ax 2 , py is the minimum with the
+larger (|pm in − pm ax 1 | + |pm in − pm ax 2 |) value. The extremes
+localization computation uses a window of 61 consecutive values of the considered profile. If the profile value is smaller than
+the extremes of the window, then a minimum exists inside that
+window. The smaller value of the profile inside the window is
+considered as the minimum location. A similar strategy is used
+for the maxima localization. The point selected as (px , py ) is
+marked in the IG image as the red square (see Fig. 6 top left
+image).
+In the large majority of the retinal images, (px , py ) is the
+correct localization of the OD, but in some cases it may
+be slightly dislocated and outside the OD region. To overcome
+these situations, a new convergence algorithm described in the
+next section was derived to pinpoint the exact localization of
+the OD. The previously described approach has some similarities followed by Mahfouz et al. [5]. However, our method uses
+a different vessel detector that is more resilient than the edge
+detector of [5] to pathological signs. This paper also uses a set
+of image divisions with different sizes instead of the sliding
+window in [5], resulting on improved reliability to different image resolutions and OD sizes. Furthermore, this paper uses the
+vessels oblique orientations to improve the vertical coordinate
+detection.
+D. Final Localization of the OD
+The final step of the described method consists of the determination of the final OD localization. To achieve this, a technique
+based on the two most distinct features of the OD was developed: high convergence of vessels and high intensity values.
+First, vessels convergence regions are defined. Subsequently,
+the maximum point of the vessels convergence, designated by
+(cx , cy ), is computed inside those regions. Moreover, the maximum point of intensity inside the defined vessels convergence
+regions, designated by (bx , by ), is also computed. The aim is to
+lead the initial OD localization (px , py ) to a nearby localization
+with a higher vessel convergence (cx , cy ) and a higher intensity
+(bx , by ).
+In particular, the point (cx , cy ) is obtained tracing a tangent
+line at each vessel pixel in Γ, followed by the determination
+of the point where maxima intersection occurs. To evaluate the
+orientation at each vessel pixel, a structure tensor was used.
+As referred by van Vliet et al. [26] and Breu et al. [27], the
+structure tensor yields an excellent characterization of the local
+dimensionality, and of the corresponding orientation for simple
+neighborhoods. Simple neighborhoods exhibit a single orientation, like in vessels features, making it a robust estimation of
+the orientation information. The structure tensor can be defined
+as
+
+ 2
+Γx
+Γx Γy
+(16)
+T =
+Γx Γy
+Γ2y
+where the overhead denotes a local Gaussian filtering with a σ =
+0.8 and a kernel size of [5 × 5] [28]. The differential operators
+
+Fig. 8. Scheme of the final OD localization calculation. The blue square ()
+in the first figure represent the (p x , p y ) point. The blue cross (×) and circle (◦),
+are respectively the (cx , cy ) and (bx , by ) points. The red cross (+) is the final
+OD localization. (a) Original image. (b) Tangent lines. (c) Gaussian filtering of
+(b). (d) Maxima regions. (e) Intersection of (p x , p y ). (f) Maxima convergence
+regions. (g) Maxima intensity regions. (h) Final OD localization.
+
+Γx and Γy were calculated as in [29], considering the Γ defined
+in (5) improving the orientations calculation. The parameter
+β corresponds to the orientation of the vessel pixels, and it is
+computed by
+ 2
+
+Γx − Γ2y
+1
+.
+(17)
+β = arctan
+2
+2Γx Γy
+Before tracing the tangential lines, a morphological thinning
+was performed followed by a threshold of Γ to select the most
+relevant pixels. This threshold was set experimentally on 0.2
+λ2 .
+Furthermore, only the pixels that lie inside a circular region
+
+580
+
+IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 20, NO. 2, MARCH 2016
+
+TABLE I
+NUMBER OF FAILED OD LOCALIZATIONS USING THE PROPOSED METHOD WITH AND WITHOUT THE FINAL LOCALIZATION STEP OF SECTION II-D
+
+Number of images
+Without step II-D
+With step II-D
+
+STARE
+
+DRIVE
+
+DIARETDB0
+
+DIARETDB1
+
+MESSIDOR
+
+ROC
+
+E-OPHTHA-EX
+
+HRF
+
+81
+6
+1
+
+40
+2
+0
+
+130
+5
+2
+
+89
+3
+1
+
+1200
+38
+9
+
+100
+6
+1
+
+82
+4
+1
+
+45
+1
+0
+
+centered in (px , py ) with a diameter of δ pixels are considered.
+The value of δ depends on the initial resolution of the image and
+its calculation is explained in Section II-D. The tangential lines
+are exemplified in Fig. 8(b). The image with the tangential lines
+was filtered by a Gaussian (experimentally a σ = 15 and a kernel
+size of [51 × 51] were selected). Fig. 8(c) represents the result
+of the Gaussian filtering considering only the region defined by
+the binary mask BW . In this image, the high intensity regions
+represent a high vessel convergence. To select the most relevant
+convergence regions, the maxima were selected using
+ 2 2 
+ 2
+∂ f
+∂ f ∂2 f
+∂2 f
+−
+<0
+(18)
+>
+0
+∧
+∂x2 ∂y 2
+∂x∂y
+∂x2
+where f is a generic 2-D function, and the second-order partial
+derivatives were evaluated using a larger mask [−1 v1 v2 ... vn 1]
+with vi = 0 ∀i and the corresponding transpose. n was experimentally set equal to 31 ensuring the detection of larger regions. Fig. 8(d) shows an example of the application of these
+masks. This way avoided the use of simple threshold that will not
+adapt to different OD dimensions. Next, the point (px , py ) was
+prolonged in the vertical and horizontal orientations, followed
+by a dilation with a “disk” structuring element with a size of
+10 pixels [see Fig. 8(e)]. Then, only the regions that intersect
+these dilated lines are considered. In each of these regions, the
+point with the highest convergence, (cx , cy ) and the point with
+the highest intensity in IG , (bx , by ) are selected [see Fig. 8(f) and
+(g)]. The final OD position is given by the average of (px , py ),
+(cx , cy ), and (bx , by ) [represented by the red cross in the example of Fig. 8(h)].
+III. RESULTS
+An automatic system for the localization of the OD has been
+presented. To evaluate the proposed algorithm eight publicly
+available datasets were used. In this section, the quantitative
+and qualitative results are presented. The public datasets are
+first described. Then, the performance of the proposed method
+is presented and discussed.
+A. Datasets and Evaluation Criteria
+The eight public datasets of retinal images used for testing
+were: 1) the STARE dataset [10] with 31 images of healthy
+retinas and 50 images of pathological retinas which is widely
+used for benchmarking of the OD localization in the literature.
+2) The DRIVE dataset [30] is composed of 40 retinal images,
+and was created for retinal blood vessel segmentation benchmarking. 3) The DIARETDB0 [31] and DIARETDB1 [32],
+
+Fig. 9.
+
+Variation of the OD localization failure with the δ parameter.
+
+which are composed of 130 and 89 retinal images, respectively,
+were created for diabetic retinopathy detection benchmarking.
+4) The MESSIDOR [14] with 1200 retinal images was created for diabetic retinopathy studies. 5) The sixth dataset is
+ROC [33], composed of 50 images and was created for microaneurysm detection benchmarking. 6) The E-OPHTHA-EX
+dataset [34] was particularly designed for scientific research in
+diabetic retinopathy and is composed of 47 images with exudates and 35 images with no lesion. Finally, the High-Resolution
+Fundus (HRF) Image dataset [35] was also used composed of 45
+images and designed for scientific research in diabetic retinopathy and glaucoma.
+The OD center was manually labeled by a retinal expert in all
+retina images of all datasets, except in the HRF dataset, creating
+the corresponding OD center groundtruth. For the HRF dataset,
+the provided OD center groundtruth was used. The calculated
+OD localization is considered correct if it is inside the OD region, including its borders. If no OD region is clearly visible, the
+OD localization was inferred as being correct if it was positioned
+within 60 pixels of the manually identified center, as proposed in
+[1], [4], [10]. Each image annotation was analyzed and verified
+by an independent health care professional (Medical Doctor),
+with extensive experience in retinal image analysis.
+B. OD Localization Results
+A MATLAB algorithm of the proposed method was implemented on a laptop with 2-GHz Intel Core i7 and 6 GB of RAM.
+Quantitative results for the proposed method without the final
+localization step of Section II-D are shown in Table I. It is evident that the inclusion of this last step considerably increases
+the performance of the proposed algorithm. As referred in
+Section II-D, the diameter value δ defines the size of the search
+area in which the OD can be localized and needs to be automatically defined. Fig. 9 represents the variation of the number of
+
+SOARES et al.: OPTIC DISC LOCALIZATION IN RETINAL IMAGES BASED ON CUMULATIVE SUM FIELDS
+
+581
+
+Fig. 10. OD localization examples. The blue (+) represents the estimated OD center. Each image has the corresponding name and dataset (* MESSIDOR,
+† STARE, ‡ E-OPHTHA-EX,  DIARETDB0, ◦ DIARETDB1, ∓ HRF).
+
+failed detections when δ ∈ {84, 94, 104, 114, 124}. After some
+tests, and based on the results of Fig. 9, it was verified that δ
+depends on the initial resolution of the image. Hence, δ was set
+to 114 in case the min(width, height) ≤ 600 pixels or set to
+104 otherwise. The min(width, height) is the minimum value
+between the initial width and height of the image before the
+resizing process. Nevertheless, based on Fig. 9, it is possible to
+observe that small variations of the δ do not change the results
+significantly. Qualitative results are shown in Fig. 10 and Quantitative results are shown in Table II, where a comprehensive and
+detailed review is made relatively to the most used datasets in
+the literature, in terms of average runtime, OD center error (distance between the labeled and the marked OD localization), and
+corresponding standard deviation, and also accuracy. It should
+be noted that the methods in Table II were not all benchmarked
+on the same computer system. Hence, the runtime should only
+be used as an indication and not used directly for comparison of
+the different methods.
+Fig. 11 plots the Accuracy results of Table II for better visualization. The developed method performance, represented with
+red bars, is always between the best for all publicly available
+datasets. An OD localization accuracy of 99.15% is obtained for
+the 1767 retinal images within the eight publicly datasets, with a
+total average computation time of 18.34 s. In particular, for the
+STARE and DRIVE datasets, an accuracy of 98.77% (80/81)
+and 100.00% (40/40) was obtained, respectively, which equals
+the best results of other state-of-the-art methods ([4], [14] in the
+STARE dataset and [4], [5], [16], [18] in the DRIVE dataset).
+For the DIARETDB0, an accuracy of 98.46% (128/130) is obtained. To the best of our knowledge, this result is only exceeded
+in [15] with an accuracy of 99.23%. For the DIARETDB1, an
+accuracy of 98.88% (88/89) was achieved, which equals the
+best result of [15]. In the MESSIDOR dataset, an accuracy of
+99.25% (1189/1200) was achieved, being slightly smaller than
+the reported on [14] and [18] with 99.75% and 99.42% accuracy, respectively. To the best of our knowledge, no results have
+been reported for the ROC, E-OPHTHA-EX, and HRF datasets.
+An accuracy of 99.00% (49/50), 98.78% (81/82), and 100%
+(45/45) was achieved respectively for these datasets. Other relevant results were achieved in [17] with an accuracy of 99.90%
+(999/1000), and in [8] with 100.00% (40/40). However, these
+
+results were achieved in private datasets, and no comparison
+was possible. In total, our method failed in 15 retinal images,
+(see examples in first row of Fig. 12). The total average OD
+center localization error was 26.52 pixels, being only surpassed
+by [5], [14]. The OD center errors were calculated considering
+the initial image sizes.
+IV. DISCUSSION AND CONCLUSION
+A new algorithm for the localization of the OD in retinal
+images was developed and presented in this paper. The algorithm reveals to be reliable and efficient. The robustness of
+the proposed technique is guaranteed by evaluating the method
+in eight publicly available datasets. Experiments revealed an
+OD localization accuracy of 99.15% which is larger than other
+state-of-the-art methods. Although the used implementation is
+not optimized, the algorithm already provided an efficient computation, resulting in an average computation time of 18.34 s
+per image. Anyway, Table II of the paper always show that our
+method has a better tradeoff between the complexity and the
+performance. The only exception is given in [14], that has very
+similar results, but was only tested with two datasets.
+The defined model is based on two new techniques:
+1) The cumulative sums of successive subdivisions described in
+Section II-C, and 2) the vessel enhancement described in
+Section II-A. The first has two major advantages. First, it is
+able to enhance the profiles gv and gh maxima and minima
+along a specific direction. It also fits well to different images
+with different resolutions because it considers several regions
+with different sizes.
+The main cause of error resulted from an erroneous determination of gv and gh profiles minima, either in the horizontal or
+in the vertical coordinate. This occurs in images where the vessels belonging to the main arcades have low contrast or are not
+present, as can be seen in the first and second image in Fig. 12.
+Another source of error occurs when the vertical vessels that
+cross the OD are either not present or exhibit a low contrast
+when compared with other vertical vessels in other regions of
+the retina, leading to an inaccurate determination of the horizontal coordinate (see images three, four, and five in Fig. 12).
+This suggests that a method capable of a better selection and
+
+582
+
+IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 20, NO. 2, MARCH 2016
+
+TABLE II
+OD LOCALIZATION METHODS COMPARISON ON SEVERAL DATASETS
+Foracchia Youssif Welfer Hoover Mahfouz
+[1]
+[4]
+[16]
+[10]
+[5]
+STARE (81)
+Time
+OD Center error
+Standard deviation
+Fail
+Accuracy
+DRIVE (40)
+Time
+OD Center error
+Standard deviation
+Fail
+Accuracy
+DIARETDB0 (130)
+Time
+OD Center error
+Standard deviation
+Fail
+Accuracy
+DIARETDB1 (89)
+Time
+OD Center error
+Standard deviation
+Fail
+Accuracy
+MESSIDOR (1200)
+Time
+OD Center error
+Standard deviation
+Fail
+Accuracy
+ROC (100)
+Time
+OD Center error
+Standard deviation
+Fail
+Accuracy
+E-OPHTHA-EX (82)
+Time
+OD Center error
+Standard deviation
+Fail
+Accuracy
+HRF (45)
+Time
+OD Center error
+Standard deviation
+Fail
+Accuracy
+OTHER DATASET
+Time
+OD Center error
+Standard deviation
+Fail
+Total images
+Accuracy
+OVERALL
+Time
+OD Center error
+Standard deviation
+Fail
+Total images
+Accuracy
+
+Yu
+[2]
+
+Lu
+[15]
+
+Lu
+[14]
+
+Haar
+[12]
+
+Aquino Lowell
+[36]
+[37]
+
+Tobin
+[13]
+
+Ramakanth Abràmoff Our Method
+[18]
+[17]
+
+2 min
+23pixa
+nr
+2
+97.53%
+
+3.5 min
+26pixa
+nr
+1
+98.77%
+
+–
+–
+–
+–
+–
+
+4 min
+29pixa
+nr
+9
+88.89%
+
+0.46 s
+14pix
+±15pix
+6
+92.59%
+
+–
+–
+–
+–
+–
+
+40 s
+5s
+nr
+25pixa
+6pix
+nr
+nr
+nr
+nr
+3
+1
+5
+96.30% 98.77% 93.8%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+nr
+nr
+nr
+5
+93.83%
+
+–
+–
+–
+–
+–
+
+12.02 s
+18.28pix
+±12.78pix
+1
+98.77%
+
+–
+–
+–
+–
+–
+
+3.5 min
+17pix
+nr
+0
+100%
+
+nr
+nr
+nr
+0
+100%
+
+–
+–
+–
+–
+–
+
+0.32 s
+11pix
+±11pix
+0
+100%
+
+–
+–
+–
+–
+–
+
+nr
+nr
+nr
+1
+97.50%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+0.19s
+nr
+nr
+0
+100%
+
+–
+–
+–
+–
+–
+
+9.40 s
+14.33pix
+±9.77pix
+0
+100%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+0.98 s
+nr
+nr
+2
+98.46%
+
+–
+–
+–
+–
+–
+
+nr
+nr
+nr
+1
+99.23%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+0.20s
+nr
+nr
+2
+98.46%
+
+–
+–
+–
+–
+–
+
+20.07 s
+23.51pix
+±17.57pix
+2
+98.46%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+7.89 s
+nr
+nr
+2
+97.75%
+
+–
+–
+–
+–
+–
+
+0.98 s
+nr
+nr
+2
+97.75%
+
+–
+–
+–
+–
+–
+
+nr
+nr
+nr
+1
+98.88%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+0.20 s
+nr
+nr
+1
+98.88%
+
+–
+–
+–
+–
+–
+
+20.07 s
+24.08pix
+±14.87pix
+1
+98.88%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+4.7 s
+nr
+nr
+11
+99.08%
+
+–
+–
+–
+–
+–
+
+5s
+nr
+nr
+3
+99.75%
+
+–
+–
+–
+–
+–
+
+1.67 s
+nr
+nr
+14
+98.83%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+nr
+nr
+nr
+7
+99.42%
+
+–
+–
+–
+–
+–
+
+18.64 s
+24.59pix
+±17.24pix
+9
+99.25%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+20.94 s
+23.93pix
+±14.95pix
+1
+99.00%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+21.95 s
+34.62pix
+±29.60pix
+1
+98.78%
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+
+23.65 s
+48.85pix
+±22.26pix
+0
+100%
+
+–
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+–
+
+–
+–
+–
+–
+–
+–
+
+30 s
+9.75pix
+±16.14pix
+1
+1000
+99.90%
+
+-
+
+0.20 s
+nr
+nr
+15
+1540
+99.03%
+
+30 s
+9.75pix
+±16.14pix
+1
+1000
+99.90%
+
+18.34 s
+26.52pix
+±17.95pix
+15
+1767
+99.15%
+
+2 min
+nr
+nr
+2
+81
+97.53%
+
+3.5 min 7.89 s 4 min
+23pix
+nr
+29pix
+nr
+nr
+nr
+1
+2
+9
+121
+129
+81
+99.17% 98.45% 88.89%
+
+0.65 s
+nr
+nr
+10
+340
+97.06%
+
+–
+nr
+nr
+nr
+6pix
+nr
+3
+1
+120
+191
+97.50% 99.48%
+
+–
+–
+–
+–
+–
+–
+
+nr
+nr
+nr
+nr
+nr
+nr
+1
+23
+100
+345
+99.00% 80.80%
+
+4.7 s
+nr
+5s
+nr
+1.67 s
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+nr
+11
+9
+7
+6
+14
+1
+23
+1200
+340
+1401
+272
+1200
+100
+345
+99.08% 97.04% 99.50% 97.79% 98.83% 99.00% 80.80%
+
+Time - Average computation time; Standard deviation - Average standard deviation of the OD center error; Fail - number of images failed by the method; nr - Not reported; a - Results
+taken from [14].
+
+SOARES et al.: OPTIC DISC LOCALIZATION IN RETINAL IMAGES BASED ON CUMULATIVE SUM FIELDS
+
+Fig. 11.
+
+583
+
+Accuracy for the datasets and methods.
+
+Fig. 12. Examples of OD localization failures. The blue (+) represents the estimated OD center. Each image has the corresponding name and dataset († STARE,
+∗ MESSIDOR, ‡ E-OPHTHA-EX, • ROC).
+
+discrimination of the correct profiles minima could reduce the
+small number of localization failures.
+The developed method depends on several parameters. Apart
+from the δ parameter previously analyzed, all other parameters
+were chosen based on the best method performance, although
+the method reveals a low sensibility to these parameters variation. Moreover, the same algorithm with the same parameters
+values was used in all the images of all datasets ensuring a high
+reliability. This paper also presents a new vessel enhancement
+method based on a well-known corner detector [24]. The proposed vessel enhancement proves to be effective in the preservation of elongated structures, and in the discrimination between
+vessel and nonvessel structures. It is important to emphasize
+that the vessel enhancement method does not provide a segmentation of the retinal vasculature. However, it can be used as a
+preprocessing step for the segmentation of this type of retinal
+
+structure. Overall and considering the large number of datasets
+and images tested, the proposed method represents a significant improvement of the OD automated localization, surpassing
+other state-of-the-art methods. Another relevant aspect of our
+method is that it allows a considerable illumination variance,
+since no illumination equalization was performed as in other
+methods like described in [4] and [12].
+Furthermore, and as a final comment, is important to emphasize that the reliability and computational efficiency of the
+proposed method allows the creation of an effective tool that
+can easily be incorporated in clinical practice.
+ACKNOWLEDGMENT
+The authors would like to thank the creators of the publicly
+available datasets.
+
+584
+
+IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 20, NO. 2, MARCH 2016
+
+REFERENCES
+[1] M. Foracchia, E. Grisan, and A. Ruggeri, “Detection of optic disc in retinal
+images by means of a geometrical model of vessel structure,” IEEE Trans.
+Med. Imag., vol. 23, no. 10, pp. 1189–1195, Oct. 2004.
+[2] H. Yu, E. Barriga, C. Agurto, S. Echegaray, M. Pattichis, W. Bauman,
+and P. Soliz, “Fast localization and segmentation of optic disk in retinal images using directional matched filtering and level sets,” IEEE
+Trans. Inform. Technol. Biomed., vol. 16, no. 4, pp. 644–657, Jul.
+2012.
+[3] H. Li and O. Chutatape, “A model-based approach for automated feature
+extraction in fundus images,” in Proc. IEEE 9th Int. Conf. Comput. Vis.,
+2003, vol. 1, pp. 394–399.
+[4] A.-H. A.-R. Youssif, A. Ghalwash, and A. A.-R. Ghoneim, “Optic disc
+detection from normalized digital fundus images by means of a vessels’ direction matched filter,” IEEE Trans. Med. Imag., vol. 27, no. 1,
+pp. 11–18, Jan. 2008.
+[5] A. Mahfouz and A. Fahmy, “Fast localization of the optic disc using
+projection of image features,” IEEE Trans. Image Process., vol. 19,
+no. 12, pp. 3285–3289, Dec. 2010.
+[6] T. Walter, J.-C. Klein, P. Massin, and A. Erginay, “A contribution of image
+processing to the diagnosis of diabetic retinopathy-detection of exudates
+in color fundus images of the human retina,” IEEE Trans. Med. Imag.,
+vol. 21, no. 10, pp. 1236–1243, Oct. 2002.
+[7] M. Goldbaum, S. Moezzi, A. Taylor, S. Chatterjee, J. Boyd, E. Hunter,
+and R. Jain, “Automated diagnosis and image understanding with object
+extraction, object classification, and inferencing in retinal images,” in
+Proc. Int. Conf. Image Process., vol. 3, 1996, pp. 695–698.
+[8] M. Lalonde, M. Beaulieu, and L. Gagnon, “Fast and robust optic disc
+detection using pyramidal decomposition and Hausdorff-based template
+matching,” IEEE Trans. Med. Imag., vol. 20, no. 11, pp. 1193–1200, Nov.
+2001.
+[9] C. Sinthanayothin, J. F. Boyce, H. L. Cook, and T. H. Williamson, “Automated localisation of the optic disc, fovea, and retinal blood vessels from
+digital colour fundus images,” Brit. J. Ophthalmol., vol. 83, pp. 902–910,
+1999.
+[10] A. Hoover and M. Goldbaum, “Locating the optic nerve in a retinal image
+using the fuzzy convergence of the blood vessels,” IEEE Trans. Med.
+Imag., vol. 22, no. 8, pp. 951–958, Aug. 2003.
+[11] G. B. Kande, P. V. Subbaiah, and T. S. Savithri, “Feature extraction in
+digital fundus images,” J. Med. Biological Eng., vol. 9, no. 3, pp. 122–
+130, 2009.
+[12] F. ter Haar, “Automatic localization of the optic disc in digital colour
+images of the human retina,” M.S. thesis, Utrecht Univ., Utrecht, The
+Netherlands, 2005.
+[13] K. W. Tobin, Jr., E. Chaum, V. P. Govindasamy, T. P. Karnowski, and
+O. Sezer. (2006). Characterization of the optic disc in retinal imagery
+using a probabilistic approach. Proc. SPIE., 6144, pp. 61 443F–61 443F–
+10. [Online]. Available: http://dx.doi.org/10.1117/12.641670
+[14] S. Lu, “Accurate and efficient optic disc detection and segmentation by
+a circular transformation,” IEEE Trans. Med. Imag., vol. 30, no. 12,
+pp. 2126–2133, Dec. 2011.
+[15] S. Lu and J.-H. Lim, “Automatic optic disc detection from retinal images
+by a line operator,” IEEE Trans. Biomed. Eng., vol. 58, no. 1, pp. 88–94,
+Jan. 2011.
+[16] D. Welfer, J. Scharcanski, C. M. Kitamura, M. M. D. Pizzol,
+L. W. B. Ludwig, and D. R. Marinho, “Segmentation of the optic disk
+in color eye fundus images using an adaptive morphological approach,”
+Comput. Biol. Med., vol. 40, no. 2, pp. 124–137, 2010.
+[17] M. Niemeijer, M. D. Abrmoff, and B. van Ginneken, “Fast detection of
+the optic disc and fovea in color fundus photographs,” Med. Image Anal.,
+vol. 13, no. 6, pp. 859–870, 2009.
+[18] S. A. Ramakanth and R. V. Babu, “Approximate nearest neighbour field
+based optic disk detection,” Comput. Med. Imaging Graph., vol. 38,
+no. 1, pp. 49–56, 2014.
+[19] S. A. Ramakanth and R. V. Babu, “Featurematch: A general ANNF estimation technique and its applications,” IEEE Trans. Image Process.,
+vol. 23, no. 5, pp. 2193–2205, May 2014.
+[20] R. J. Winder, P. J. Morrow, and E. A. McRitchie, “Algorithms for digital
+image processing in diabetic retinopathy,” Comput. Med. Imag. Graph.,
+vol. 33, no. 8, pp. 608–622, 2009.
+[21] M. Sofka and C. Stewart, “Retinal vessel centerline extraction using multiscale matched filters, confidence and edge measures,” IEEE Trans. Med.
+Imag., vol. 25, no. 12, pp. 1531–1546, Dec. 2006.
+
+[22] R. F. Frangi, W. J. Niessen, K. L. Vincken, and M. A. Viergever, Multiscale
+Vessel Enhancement Filtering. New York, NY, USA: Springer-Verlag,
+1998, pp. 130–137.
+[23] C. Kondermann, D. Kondermann, and M. Yan, “Blood vessel classification into arteries and veins in retinal images,” Proc. SPIE, vol. 6512,
+pp. 651247-1 651247-9, 2007.
+[24] H. Wang and M. Brady, “Real-time corner detection algorithm for motion
+estimation,” Image Vision Comput., vol. 13, no. 9, pp. 695–703, 1995.
+[25] A. Mendonca and A. Campilho, “Segmentation of retinal blood vessels by
+combining the detection of centerlines and morphological reconstruction,”
+IEEE Trans. Med. Imag., vol. 25, no. 9, pp. 1200–1213, Sep. 2006.
+[26] L. van Vliet and F. G. A. Faas, “Multi-orientation analysis by decomposing the structure tensor and clustering,” in Proc. 18th Int. Conf. Pattern
+Recog.., 2006, vol. 3, pp. 856–860.
+[27] M. Breu, B. Burgeth, and J. Weickert, “Anisotropic continuous-scale morphology,” in Proc. Pattern Recog. Image Anal., 2007, vol. 4478, pp. 515–
+522.
+[28] P. D. Kovesi, “MATLAB and Octave functions for computer vision and
+image processing,” Centre for Exploration Targeting, School of Earth
+and Environment, The University of Western Australia. (2000). [Online].
+Available: http://www.csse.uwa.edu.au/∼pk/research/matlabfns/
+[29] H. Farid and E. Simoncelli, “Differentiation of discrete multidimensional
+signals,” IEEE Trans. Image Process., vol. 13, no. 4, pp. 496–508, Apr.
+2004.
+[30] J. Staal, M. Abramoff, M. Niemeijer, M. Viergever, and B. van Ginneken,
+“Ridge-based vessel segmentation in color images of the retina,” IEEE
+Trans. Med. Imag., vol. 23, no. 4, pp. 501–509, Apr. 2004.
+[31] V. Kalesnykiene, J.-K. Kamarainen, L. Lensu, I. Sorri, H. Uusitalo, H.
+Kälviäinen, and J. Pietilä, “Diaretdb0: Evaluation database and methodology for diabetic retinopathy algorithms,” Lappeenranta Univ. Technol.,
+Lappeenranta, Finland, Tech. Rep., 2006.
+[32] V. Kalesnykiene, J.-K. Kamarainen, R. Voutilainen, H. Uusitalo, H.
+Kälviäinen, and J. Pietilä, “Diaretdb1 diabetic retinopathy database and
+evaluation protocol,” in Proc. Brit. Mach. Vis. Conf., pp. 61–65, 2007.
+[33] M. Niemeijer, B. van Ginneken, M. Cree, A. Mizutani, G. Quellec,
+C. Sanchez, B. Zhang, R. Hornero, M. Lamard, C. Muramatsu, X. Wu,
+G. Cazuguel, J. You, A. Mayo, Q. Li, Y. Hatanaka, B. Cochener, C. Roux,
+F. Karray, M. Garcia, H. Fujita, and M. Abramoff, “Retinopathy online
+challenge: Automatic detection of microaneurysms in digital color fundus
+photographs,” IEEE Trans. Med. Imag., vol. 29, no. 1, pp. 185–195, Jan.
+2010.
+[34] E. Decencire, G. Cazuguel, X. Zhang, G. Thibault, J.-C. Klein, F. Meyer,
+B. Marcotegui, G. Quellec, M. Lamard, R. Danno, D. Elie, P. Massin,
+Z. Viktor, A. Erginay, B. La, and A. Chabouis, “Teleophta: Machine
+learning and image processing methods for teleophthalmology,” IRBM,
+vol. 34, no. 2, pp. 196–203, 2013.
+[35] J. Odstrcilik, R. Kolar, A. Budai, J. Hornegger, J. Jan, J. Gazarek,
+T. Kubena, P. Cernosek, O. Svoboda, and E. Angelopoulou, “Retinal vessel segmentation by improved matched filtering: Evaluation on a new
+high-resolution fundus image database,” IET Image Process., vol. 7,
+no. 4, pp. 373–383, Jun. 2013.
+[36] A. Aquino, M. E. Gegundez, and D. Marin, “Automated optic disc detection in retinal images of patients with diabetic retinopathy and risk of
+macular edema,” Int. J. Biol. Life Sci., vol. 8, no. 11, p. 87, 2010.
+[37] J. Lowell, A. Hunter, D. Steel, A. Basu, R. Ryder, E. Fletcher, and
+L. Kennedy, “Optic nerve head segmentation,” IEEE Trans. Med. Imag.,
+vol. 23, no. 2, pp. 256–264, Feb. 2004.
+
+Ivo Soares received the O.D. degree from the University of Beira Interior, Portugal, in 2007. He
+is currently working toward the Ph.D. degree in
+biomedicine at the University of Beira Interior,
+Covilhã, Portugal.
+He has been involved on clinic practices on the
+vision domain and his research interests include optometry, retinal fundus images analysis, and computer
+vision.
+
+SOARES et al.: OPTIC DISC LOCALIZATION IN RETINAL IMAGES BASED ON CUMULATIVE SUM FIELDS
+
+Miguel Castelo-Branco received the Ph.D. degree
+in medicine from the Universidade da Beira Interior,
+Portugal, in 2008.
+He is an Internal Medicine Specialist Physician.
+He is currently the CEO of Centro Hospitalar Cova
+da Beira and an Invited Associate Professor at Universidade da Beira Interior. His research interests include Vascular Disease, Teaching Competencies in
+Medicine, and IT in Medicine. He has participated in
+more than 20 peer reviewed journal and conference
+papers. He is a Member of several national and international societies.
+
+585
+
+António M. G. Pinheiro (M’99) received the B.Sc.
+degree in electrical and computer engineering from
+the Instituto Superior Tcnico, Lisbon, Portugal, in
+1988 and the Ph.D. degree from the University of Essex, Essex, U.K., in 2002.
+He is currently a Lecturer at the University of Beira
+Interior, Covilhã, Portugal, since 1988, where he is
+currently the Head of the Optics Center. From 1998
+to 2001, he was in a licence leave at the University
+of Essex, U.K. He was a Portuguese representative
+of the E.U. COST Actions 292 and IC1003 and currently he is a Portuguese representative of the E.U. COST Actions IC1206 and
+IC1304. His research interests include image processing, computer vision, and
+multimedia technology domains.
+
+
