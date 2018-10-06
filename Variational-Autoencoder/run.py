@@ -11,14 +11,14 @@ np.random.seed(42)
 hu_encoder = 400
 hu_decoder = 400
 n_latent = 20
-continuous = False
+continuous = True
 n_epochs = 40
 
 if continuous:
     print("Loading Freyface data")
     # Retrieved from: http://deeplearning.net/data/mnist/mnist.pkl.gz
     f = open('freyfaces.pkl', 'rb')
-    x = pickle.load(f, encoding='latin1')
+    x = pickle.load(f)
     f.close()
     x_train = x[:1500]
     x_valid = x[1500:]
@@ -66,6 +66,3 @@ if __name__ == "__main__":
 
     valid_LB = model.likelihood(x_valid.astype(theano.config.floatX))
     print("LB on validation set: {0}".format(valid_LB))
-
-
-
