@@ -39,11 +39,11 @@ batch_order = np.arange(int(model.N / model.batch_size))
 epoch = 0
 LB_list = []
 
-if os.path.isfile(path + "params.pkl"):
-    print("Restarting from earlier saved parameters!")
-    model.load_parameters(path)
-    LB_list = np.load(path + "LB_list.npy")
-    epoch = len(LB_list)
+#if os.path.isfile(path + "params.pkl"):
+#    print("Restarting from earlier saved parameters!")
+#    model.load_parameters(path)
+#    LB_list = np.load(path + "LB_list.npy")
+#    epoch = len(LB_list)
 
 if __name__ == "__main__":
     print("iterating")
