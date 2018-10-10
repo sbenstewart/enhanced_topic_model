@@ -9,4 +9,5 @@ The journey down this project was much more memorable and difficult than what wa
 The auto encoder we developed works on images.
 ## What we have left to do
 The auto encoder must be made to work with text as input.
+<br>
 <b>Have a great day :)</b>
